@@ -1,0 +1,18 @@
+Package: ReportingTemplates
+Title: Simple Templates for Reporting
+Version: 0.1.20170421.8
+Authors@R: person("James", "Holden", email = "Gaffi@Outlook.com", role = c("aut", "cre"))
+Description: Comprised of a number of often used snippets for easier access/quick retrieval.
+Depends:
+    R (>= 3.2.5),
+    data.table,
+    ggplot2,
+    plyr,
+    scales
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+LazyLoad: true
+RoxygenNote: 5.0.1
+Imports: 
+    
