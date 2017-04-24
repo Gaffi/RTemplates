@@ -1,0 +1,6 @@
+library(roxygen2)
+library(devtools)
+setwd("~/RTemplates")
+document()
+install("ReportingTemplates")
+detach('package:ReportingTemplates', unload=T)
