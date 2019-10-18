@@ -2,76 +2,123 @@
 % Please edit documentation in R/createControlChart.R
 \name{createControlChart}
 \alias{createControlChart}
-\title{Create Control Charts in R}
+\title{Create Control Charts}
 \usage{
 createControlChart(data, obs, vals, stages = NA, useSD = FALSE,
   specLimit = NA, xAxisLabel = NA, yAxisLabel = NA, chartTitle = NA,
-  dataFormat = "Round2")
+  dataFormat = "Round2", labelAllPoints = FALSE, dataLabelSize = 3.25,
+  marginScale = 10, flagStageVariance = !is.na(stages),
+  flagStageType = "all", flagSpecLimit = "none", maxUCL = NA,
+  minLCL = NA)
 }
 \arguments{
-\item{data}{A data.table of the data you want to chart. This can include extra, unneeded columns.
-
-This will try to coerce data to a data.table if a non-data.table is passed.}
+\item{data}{A \code{\link{data.table}} (or an object that can be coerced into a \code{data.table}) of the data you want to chart.}
 
 \item{obs}{A character string of the column identifying observations (often dates).}
 
 \item{vals}{A character string of the column identifying the data points to plot.}
 
-\item{stages}{A character string of the column identifying the stages or groups of the data points. If NA, no stages are used. Defaults to NA.}
+\item{stages}{A character string of the column identifying the stages or groups of the data points. If NA, no stages are used.}
 
-\item{useSD}{A logical boolean (TRUE/FALSE). If TRUE, will use 3 * calculated standard deviations from the mean as the UCL/LCL. If FALSE, will use 2.66 * the average of the moving range (as is the default in Minitab) from the mean. Defaults to FALSE.}
+\item{useSD}{A logical boolean (\code{TRUE}/\code{FALSE}). See details for usage.}
 
-\item{specLimit}{A one or two element vector of values specifying an upper and lower spec limit. Defaults to NA.}
+\item{specLimit}{A one- or two-element vector of numeric values specifying specification limits or targets.}
 
-\item{xAxisLabel}{A character string of the text to use as the x axis label. Defaults to NA, in which case the field name will be used.}
+\item{xAxisLabel}{A character string of the text to use as the x axis label.}
 
-\item{yAxisLabel}{A character string of the text to use as the y axis label. Defaults to NA, in which case the field name will be used.}
+\item{yAxisLabel}{A character string of the text to use as the y axis label.}
 
-\item{chartTitle}{A character string of the text to use as the title of the chart. Defaults to NA.}
+\item{chartTitle}{A character string of the text to use as the title of the chart.}
 
-\item{dataFormat}{A character string of the simpleFormat to be used. (See ?simpleFormat) Defaults to 'Round2'.}
+\item{dataFormat}{A character string format as used by \code{\link{simpleFormat}()}.}
+
+\item{labelAllPoints}{A logical boolean (\code{TRUE}/\code{FALSE}). If \code{TRUE}, will add labels to every data point on the chart.}
+
+\item{dataLabelSize}{A numeric value specifying the size of data point labels. Ignored when \code{labelAllPoints} is \code{FALSE}.}
+
+\item{marginScale}{A numeric value specifying how much room should be given on the right-hand side of the chart for labels.}
+
+\item{flagStageVariance}{A logical boolean (\code{TRUE}/\code{FALSE}) stating whether statistically significant changes between stages should be colored differently. Defaults to \code{TRUE} if \code{stages} is specified, otherwise \code{FALSE} (\code{!is.na(stages)}).}
+
+\item{flagStageType}{A character string denoting the type of stage flagging to set.}
+
+\item{flagSpecLimit}{A character string denoting the type of specification limit flagging to set.}
+
+\item{maxUCL}{A numeric value specifying the maximum limit to restrict the control limit range to.}
+
+\item{minLCL}{A numeric value specifying the minimum limit to restrict the control limit range to.}
 }
 \value{
-A ggplot2 object that can be printed or added to a file/image output. 
+A ggplot2 object that can be printed or added to a file/image output.
 Can also be manipulated as a normal ggplot object can by adding new layers (though this is likely unnecessary and cumbersome).
-e.g. createControlChart + geom_line(aes(label = somedata))
+e.g. createControlChart + geom_line(ggplot2::aes(label = someData))
 }
 \description{
-Reusable code to quickly create Minitab-like control charts in R.
+Reusable code to quickly create and customize Minitab-like control charts.
+}
+\details{
+\code{data} may include extra, unneeded columns. \code{createControlChart()} will try to coerce data to a \code{data.table} if not provided in this format.
+
+When \code{useSD} is \code{TRUE}, function will use 3 standard deviations from the mean as the UCL/LCL. If \code{FALSE}, will use 2.66 * the average of the moving range from the mean (as is the default in Minitab).
+
+When \code{xAxisLabel} or \code{yAxisLabel} is NA (default), the field name from the data will be used as the axis title. If an empty string (\code{''})is passed, the axis label is completely removed.
+
+The range for \code{marginScale} is between 2 and 10, with 2 being the largest size and 10 being the smallest. Values outside this range will not create any usable or observable difference.
+
+When \code{flagStageVariance} is \code{TRUE} (default when \code{stages} is supplied), \code{flagStageType} must be supplied (defaults to \code{'all'}). Value \code{'all'} will compare differences between all stages to check for long-term trending, \code{'latest'} will only check the last two stages for short-term trending. Charts with no significant variation between the specified stages will display the control limit range as green in color, while those with significant variance will turn blue.
+
+When used, \code{flagSpecLimit} will change the data point color from black (within specifications) to red if the data point lies outside the given acceptable range. The value given should be where data points should lie - what are the acceptable ranges? Valid options are:
+\itemize{
+\item{'none' - No flagging should occur (specification limit is likely for reference only).}
+\item{'above' - Valid points fall above the given \code{specLimit}.}
+\item{'below' - Valid points fall below the given \code{specLimit}.}
+\item{'inside' - Valid points fall inside the range of the upper and lower \code{specLimit}s, provided two are supplied.}
+\item{'outside' - Valid points fall outside the range of the upper and lower \code{specLimit}s, provided two are supplied.}
+}
+
+Parameters \code{maxUCL} and \code{minLCL} specify a limit (if any) to practical values to clamp calulcated control limits to. e.g. When reviewing percetnage metrics, it may not be possible to achieve over 100%, but the raw calculation may exceed that amount. Setting \code{maxUCL} will prevent the upper control limit from moving beyond 100%.
 }
 \examples{
-
-## Creating a basic control chart
-
 # Create a dataset for example purposes only.
-my.dt<-data.table(date=seq(as.Date('2017-01-01'),as.Date('2017-04-10'),1), level=rnorm(100)/2.5)
-# Alternatively: seq(as.Date('2017-01-01'),by=1,length.out=100)
-my.dt[1,2] <- 3.5
-my.dt[32,2] <- 2.75
-my.dt[77,2] <- -3.8
-my.dt[78,2] <- -3.9
+my.dt <- data.table(
+  observation = 1:60,
+  measurement = c(
+     rnorm(20)/20,
+     rnorm(20)/20 + .15,
+     rnorm(20)/20 - .25),
+  stage = rep(LETTERS[1:3], each = 20))
 
-# Create the control chart/run the function
-createControlChart(my.dt,'date','level')
-# Create same control chart with upper and lower spec limits
-createControlChart(my.dt,'date','level',specLimit=c(1,-1))
+# Create a control chart using only the base required parameters.
+createControlChart(my.dt, 'observation', 'measurement')
 
-## Create control chart with stages
+# Create same control chart with upper and lower spec limits as
+# a reference only (no flagging) and special axis/chart labels.
+createControlChart(my.dt, 'observation', 'measurement',
+                   dataFormat = 'Round2', specLimit=c(0, .1),
+                   xAxisLabel = 'Date of Occurrence',
+                   yAxisLabel = 'Recording Variation',
+                   chartTitle = 'Variation over Time')
 
-# Create a dataset for example purposes only.
-my.dt<-data.table(observation=1:100, measurement=rnorm(100)/2.5, stage=rep(1:4,each=25))
-my.dt[1,2] <- 3.5
-my.dt[32,2] <- 2.75
-my.dt[77,2] <- -3.8
-my.dt[78,2] <- -3.9
+# Create the control chart using the alternative SD calculation.
+createControlChart(my.dt, 'observation', 'measurement',
+                   dataFormat = 'Round2', useSD = TRUE)
 
-# Create the control chart/run the function
-createControlChart(my.dt,'observation','measurement','stage')
-# Create the same control chart with a single spec limit
-createControlChart(my.dt,'observation','measurement','stage',specLimit=1)
+# Create the chart with stages, formatted as \%.
+createControlChart(my.dt, 'observation', 'measurement',
+                   'stage', dataFormat = 'Percent2')
 
+# Create the chart with stages, formatted as \% and
+# specification limit flagging.
+createControlChart(my.dt, 'observation', 'measurement',
+                   'stage', dataFormat = 'Percent2',
+                   specLimit = 0.15,
+                   flagSpecLimit = 'below')
+
+
+}
+\seealso{
+See \code{\link{simpleFormat}} for format options, \code{\link{TemplateHelp}} for other tools.
 }
 \keyword{device}
 \keyword{graphs}
 \keyword{methods}
-
